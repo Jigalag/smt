@@ -8,6 +8,6 @@
 
 ?>
 
-<div>
-    <h1>S< Trending Plugin</h1>
-</div>
+<div id="root"></div>
+
+<script src="<?php echo SMT_URL.'/assets/js/bundle.js'; ?>"></script>

@@ -64,6 +64,7 @@ module.exports = {
             { from: 'admin', to: 'admin' },
             { from: 'assets', to: 'assets' },
             { from: '*.php' },
+            { from: 'src/index.html' },
         ]),
     ]
 };
