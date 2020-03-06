@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import styles from "./App.css"
 import Header from "../Header/Header";
 import Tabs from "../Tabs/Tabs";
 import Tab from "../Tab/Tab";
@@ -10,14 +11,21 @@ function App() {
     return (
         <div>
             <Header />
-            <Tabs>
-                <Tab title={'Settings'}>
-                    <Settings />
-                </Tab>
-                <Tab title={'Twitter'}>
-                    <Twitter />
-                </Tab>
-            </Tabs>
+            <div className={styles.mainWrapper}>
+                <div className={styles.mainSide}>
+                    <Tabs>
+                        <Tab title={'Settings'}>
+                            <Settings />
+                        </Tab>
+                        <Tab title={'Twitter'}>
+                            <Twitter />
+                        </Tab>
+                    </Tabs>
+                </div>
+                <div className={styles.savedSide}>
+
+                </div>
+            </div>
         </div>
     )
 }
