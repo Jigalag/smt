@@ -8,9 +8,9 @@ function Tabs({children}) {
             <div className={styles.tabsHeader}>
                 {
                     children.map((elem, index) => {
-                           let className = index === selected ? styles.selectedTab : '';
+                           let className = index === selected ? `${styles.selectedTab} ${styles.tabItem}` : styles.tabItem;
                            return (
-                               <div onClick={() => select(index)} className={className} key={index}>
+                               <div onClick={() => !elem.props.disabled && select(index)} className={className} key={index}>
                                    {elem.props.title}
                                </div>
                            )

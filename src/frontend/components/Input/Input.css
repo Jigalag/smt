@@ -1,0 +1,30 @@
+.inputWrapper {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    margin-bottom: 25px;
+    align-items: flex-start;
+}
+.label {
+    font: 16px/20px Arial;
+    margin-bottom: 5px;
+    display: block;
+}
+.input {
+    height: 40px !important;
+    border: 1px solid #ccc;
+    padding: 0 20px;
+    font: 16px Arial;
+    display: block;
+    width: 100%;
+}
+.input:focus {
+    outline: none;
+}
+.input[type="submit"] {
+    display: inline-block;
+    width: auto;
+    background: #f1f1f1;
+    padding: 0 40px;
+    cursor: pointer;
+}

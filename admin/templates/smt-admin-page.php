@@ -7,6 +7,9 @@
  */
 
 ?>
+<script>
+    window.ajaxURL = '<?php echo admin_url( 'admin-ajax.php' ); ?>';
+</script>
 
 <div id="root"></div>
 

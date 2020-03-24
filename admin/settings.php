@@ -11,6 +11,9 @@ function sm_trending() {
 }
 
 function smt_menu() {
-    add_menu_page("SM Trending", "SM Trending", "smt_options", "sm_trending", "sm_trending", "");
+    add_menu_page("SM Trending", "SM Trending", "manage_options", "sm_trending", "sm_trending", "");
 }
 add_action("admin_menu", "smt_menu");
+
+
+echo get_option('smt_settings');

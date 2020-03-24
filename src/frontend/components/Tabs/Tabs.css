@@ -1,12 +1,48 @@
 .tabsWrapper {
-
+    display: flex;
+    flex-direction: column;
 }
 .tabsHeader {
-
+    display: flex;
+    position: relative;
+    z-index: 2;
 }
 .tabsContent {
-
+    display: flex;
+    background: #ffffff;
+    border: 1px solid #cccccc;
+    margin-top: -1px;
+    position: relative;
+    z-index: 1;
 }
 .selectedTab {
 
+}
+.tabItem {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 30px;
+    font: 16px/40px Arial;
+    color: #000;
+    cursor: pointer;
+    -webkit-transition: all 0.3s ease;
+    -moz-transition: all 0.3s ease;
+    -ms-transition: all 0.3s ease;
+    -o-transition: all 0.3s ease;
+    transition: all 0.3s ease;
+    border: 1px solid #cccccc;
+    margin-left: -1px;
+    background: #f1f1f1;
+}
+.tabItem:hover {
+    background: #ffffff;
+}
+.tabItem:first-child {
+    margin-left: 0;
+}
+.selectedTab {
+    background: #ffffff;
+    border-bottom-color: #ffffff;
+    cursor: default;
 }
