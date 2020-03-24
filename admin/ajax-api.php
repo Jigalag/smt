@@ -18,8 +18,8 @@ add_action( "wp_ajax_nopriv_saveGeneralSettings", "saveGeneralSettings" );
 add_action( "wp_ajax_saveTwitterSettings", "saveTwitterSettings" );
 add_action( "wp_ajax_nopriv_saveTwitterSettings", "saveTwitterSettings" );
 
-add_action( "wp_ajax_savePosts", "savePosts" );
-add_action( "wp_ajax_nopriv_savePosts", "savePosts" );
+add_action( "wp_ajax_saveTwitterPosts", "saveTwitterPosts" );
+add_action( "wp_ajax_nopriv_saveTwitterPosts", "saveTwitterPosts" );
 
 add_action( "wp_ajax_removePost", "removePost" );
 add_action( "wp_ajax_nopriv_removePost", "removePost" );
@@ -134,7 +134,7 @@ function removePost() {
     exit;
 }
 
-function savePosts() {
+function saveTwitterPosts() {
     $categoryId = get_option(SMT_POST_CATEGORY_ID);
     if (!$categoryId || $categoryId === 0) {
         echo json_encode(array(
@@ -154,6 +154,7 @@ function savePosts() {
             if (isset($saved_post->entities->media) && isset($saved_post->entities->media[0])) {
                 $post_image = $saved_post->entities->media[0]->media_url;
             }
+            $video_template = getTwitterVideo($saved_post);
             $content = fix_hash_tags($saved_post);
             $post_object = array(
                 'post_content' => $content,
@@ -164,7 +165,9 @@ function savePosts() {
                 'meta_input'  => array(
                     'original_id' => $saved_post->id_str,
                     'image' => $post_image,
-                    'position' => 0
+                    'position' => 0,
+                    'video' => $video_template,
+                    'post_date' => $saved_post->created_at,
                 ),
             );
             $post_ids[] = wp_insert_post($post_object);
@@ -263,4 +266,132 @@ function saveTwitterSettings() {
         update_option(SMT_TWITTER_CK, $ck);
         update_option(SMT_TWITTER_CS, $cs);
     }
+}
+
+function getTwitterVideo($post_data) {
+
+    // if (!wp_verify_nonce($_REQUEST['fts_security'], $_REQUEST['fts_time'] . 'load-more-nonce')) {.
+    // exit('Sorry, You can\'t do that!');.
+    // } else {.
+    if ( isset( $post_data->quoted_status->entities->media[0]->type ) ) {
+        $twitter_final = isset( $post_data->quoted_status->entities->media[0]->expanded_url ) ? $post_data->quoted_status->entities->media[0]->expanded_url : '';
+    } else {
+        $twitter_final = isset( $post_data->entities->urls[0]->expanded_url ) ? $post_data->entities->urls[0]->expanded_url : '';
+    }
+
+    // strip Vimeo URL then ouput Iframe.
+    if ( strpos( $twitter_final, 'vimeo' ) > 0 ) {
+        if ( strpos( $twitter_final, 'staffpicks' ) > 0 ) {
+            $parsed_url      = $twitter_final;
+            $parsed_url      = parse_url( $parsed_url );
+            $vimeo_url_final = preg_replace( '/\D/', '', $parsed_url['path'] );
+        } else {
+            $vimeo_url_final = (int) substr( parse_url( $twitter_final, PHP_URL_PATH ), 1 );
+        }
+        return '<div class="fts-fluid-videoWrapper"><iframe src="https://player.vimeo.com/video/' . $vimeo_url_final . '?autoplay=0" class="video" height="390" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe></div>';
+    } elseif (
+        // strip Vimeo Staffpics URL then ouput Iframe.
+        strpos( $twitter_final, 'youtube' ) > 0 && ! strpos( $twitter_final, '-youtube' ) > 0 ) {
+        $pattern = '#^(?:https?://)?(?:www\.)?(?:youtu\.be/|youtube\.com(?:/embed/|/v/|/watch\?v=|/watch\?.+&v=))([\w-]{11})(?:.+)?$#x';
+        preg_match( $pattern, $twitter_final, $matches );
+        $youtube_url_final = $matches[1];
+
+        return '<div class="fts-fluid-videoWrapper"><iframe height="281" class="video" src="https://www.youtube.com/embed/' . $youtube_url_final . '?autoplay=0" frameborder="0" allowfullscreen></iframe></div>';
+    } elseif (
+        // strip Youtube URL then ouput Iframe and script.
+        strpos( $twitter_final, 'youtu.be' ) > 0 ) {
+        $pattern = '#^(?:https?://)?(?:www\.)?(?:youtu\.be/|youtube\.com(?:/embed/|/v/|/watch\?v=|/watch\?.+&v=))([\w-]{11})(?:.+)?$#x';
+        preg_match( $pattern, $twitter_final, $matches );
+        $youtube_url_final = $matches[1];
+        return '<div class="fts-fluid-videoWrapper"><iframe height="281" class="video" src="https://www.youtube.com/embed/' . $youtube_url_final . '?autoplay=0" frameborder="0" allowfullscreen></iframe></div>';
+    } elseif (
+        // strip Youtube URL then ouput Iframe and script.
+        strpos( $twitter_final, 'soundcloud' ) > 0 ) {
+
+        // Get the JSON data of song details with embed code from SoundCloud oEmbed.
+        $get_values = wp_remote_get( 'https://soundcloud.com/oembed?format=js&url=' . $twitter_final . '&auto_play=false&iframe=true' );
+
+        // Clean the Json to decode.
+        $decode_iframe = substr( $get_values, 1, -2 );
+
+        // json decode to convert it as an array.
+        $json_object = json_decode( $decode_iframe );
+
+        return '<div class="fts-fluid-videoWrapper">' . $json_object->html . '</div>';
+    } else {
+
+        // START VIDEO POST.
+        // Check through the different video options availalbe. For some reson the varaints which are the atcual video urls vary at times in quality so we are going to shoot for 4 first then 2, 3 and 1.
+        if ( isset( $post_data->extended_entities->media[0]->video_info->variants[4]->content_type ) && 'video/mp4' === $post_data->extended_entities->media[0]->video_info->variants[4]->content_type ) {
+            $twitter_final = isset( $post_data->extended_entities->media[0]->video_info->variants[4]->url ) ? $post_data->extended_entities->media[0]->video_info->variants[4]->url : '';
+        } elseif ( isset( $post_data->extended_entities->media[0]->video_info->variants[2]->content_type ) && 'video/mp4' === $post_data->extended_entities->media[0]->video_info->variants[2]->content_type ) {
+            $twitter_final = isset( $post_data->extended_entities->media[0]->video_info->variants[2]->url ) ? $post_data->extended_entities->media[0]->video_info->variants[2]->url : '';
+        } elseif ( isset( $post_data->extended_entities->media[0]->video_info->variants[3]->content_type ) && 'video/mp4' === $post_data->extended_entities->media[0]->video_info->variants[3]->content_type ) {
+            $twitter_final = isset( $post_data->extended_entities->media[0]->video_info->variants[3]->url ) ? $post_data->extended_entities->media[0]->video_info->variants[3]->url : '';
+        } elseif ( isset( $post_data->extended_entities->media[0]->video_info->variants[1]->content_type ) && 'video/mp4' === $post_data->extended_entities->media[0]->video_info->variants[1]->content_type ) {
+            $twitter_final = isset( $post_data->extended_entities->media[0]->video_info->variants[1]->url ) ? $post_data->extended_entities->media[0]->video_info->variants[1]->url : '';
+        }
+
+        // The only difference in these lines is the "retweeted_status" These are twitter videos from Tweet link people post, the ones above are direct videos users post to there timeline.
+        elseif ( isset( $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[4]->content_type ) && 'video/mp4' === $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[4]->content_type ) {
+            $twitter_final = isset( $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[4]->url ) ? $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[4]->url : '';
+        } elseif ( isset( $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[2]->content_type ) && 'video/mp4' === $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[2]->content_type ) {
+            $twitter_final = isset( $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[2]->url ) ? $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[2]->url : '';
+        } elseif ( isset( $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[3]->content_type ) && 'video/mp4' === $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[3]->content_type ) {
+            $twitter_final = isset( $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[3]->url ) ? $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[3]->url : '';
+        } elseif ( isset( $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[1]->content_type ) && 'video/mp4' === $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[1]->content_type ) {
+            $twitter_final = isset( $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[1]->url ) ? $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[1]->url : '';
+        }
+
+        // The only difference in these lines is the "quoted_status" These are twitter videos from Tweet link people post, the ones above are direct videos users post to there timeline.
+        elseif ( isset( $post_data->quoted_status->extended_entities->media[0]->video_info->variants[4]->content_type ) && 'video/mp4' === $post_data->quoted_status->extended_entities->media[0]->video_info->variants[4]->content_type ) {
+            $twitter_final = isset( $post_data->quoted_status->extended_entities->media[0]->video_info->variants[4]->url ) ? $post_data->quoted_status->extended_entities->media[0]->video_info->variants[4]->url : '';
+        } elseif ( isset( $post_data->quoted_status->extended_entities->media[0]->video_info->variants[2]->content_type ) && 'video/mp4' === $post_data->quoted_status->extended_entities->media[0]->video_info->variants[2]->content_type ) {
+            $twitter_final = isset( $post_data->quoted_status->extended_entities->media[0]->video_info->variants[2]->url ) ? $post_data->quoted_status->extended_entities->media[0]->video_info->variants[2]->url : '';
+        } elseif ( isset( $post_data->quoted_status->extended_entities->media[0]->video_info->variants[3]->content_type ) && 'video/mp4' === $post_data->quoted_status->extended_entities->media[0]->video_info->variants[3]->content_type ) {
+            $twitter_final = isset( $post_data->quoted_status->extended_entities->media[0]->video_info->variants[3]->url ) ? $post_data->quoted_status->extended_entities->media[0]->video_info->variants[3]->url : '';
+        } elseif ( isset( $post_data->quoted_status->extended_entities->media[0]->video_info->variants[1]->content_type ) && 'video/mp4' === $post_data->quoted_status->extended_entities->media[0]->video_info->variants[1]->content_type ) {
+            $twitter_final = isset( $post_data->quoted_status->extended_entities->media[0]->video_info->variants[1]->url ) ? $post_data->quoted_status->extended_entities->media[0]->video_info->variants[1]->url : '';
+        }
+
+        // Check to see if there is a poster image available.
+        if ( isset( $post_data->extended_entities->media[0]->media_url_https ) ) {
+
+            $twitter_final_poster = isset( $post_data->extended_entities->media[0]->media_url_https ) ? $post_data->extended_entities->media[0]->media_url_https : '';
+        } elseif ( isset( $post_data->quoted_status->extended_entities->media[0]->media_url_https ) ) {
+
+            $twitter_final_poster = isset( $post_data->quoted_status->extended_entities->media[0]->media_url_https ) ? $post_data->quoted_status->extended_entities->media[0]->media_url_https : '';
+        } elseif ( isset( $post_data->retweeted_status->extended_entities->media[0]->media_url_https ) ) {
+
+            $twitter_final_poster = isset( $post_data->retweeted_status->extended_entities->media[0]->media_url_https ) ? $post_data->retweeted_status->extended_entities->media[0]->media_url_https : '';
+        }
+
+        $fts_twitter_output = '<div class="fts-jal-fb-vid-wrap">';
+
+        // This line is here so we can fetch the source to feed into the popup since some html 5 videos can be displayed without the need for a button.
+        $fts_twitter_output .= '<a href="' . $twitter_final . '" style="display:none !important" class="fts-facebook-link-target fts-jal-fb-vid-image fts-video-type"></a>';
+        $fts_twitter_output .= '<div class="fts-fluid-videoWrapper-html5">';
+        $fts_twitter_output .= '<video controls poster="' . $twitter_final_poster . '" width="100%;" style="max-width:100%;">';
+        $fts_twitter_output .= '<source src="' . $twitter_final . '" type="video/mp4">';
+        $fts_twitter_output .= '</video>';
+        $fts_twitter_output .= '</div>';
+
+        $fts_twitter_output .= '</div>';
+
+        // return '<div class="fts-fluid-videoWrapper"><iframe src="' . $twitter_final_video . '" class="video" height="390" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe></div>';.
+        // echo $twitter_final;.
+        //
+        // REMOVING THIS TWITTER VID OPTION TILL WE GET SOME ANSWERS.
+        //
+        // https://twittercommunity.com/t/twitter-statuses-oembed-parameters-not-working/105868.
+        // https://stackoverflow.com/questions/50419158/twitter-statuses-oembed-parameters-not-working.
+        return $fts_twitter_output;
+        // }.
+        // else {.
+        // exit('That is not allowed. FTS!');.
+        // }.
+        // } //strip Vine URL then ouput Iframe and script.
+    }
+    // end main else.
+    // die();.
 }

@@ -31,7 +31,7 @@ function App() {
     const savePosts = () => {
         setIsSavedPosts(false);
         const posts = [...checkedPosts];
-        fetch(window.ajaxURL + '?action=savePosts', {
+        fetch(window.ajaxURL + '?action=saveTwitterPosts', {
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
