@@ -175,7 +175,7 @@ function saveTwitterPosts() {
             }
             $video_template = getTwitterVideo($saved_post);
             $content = fix_hash_tags($saved_post);
-            $permalink = 'https://twitter.com/' . $saved_post->user->screen_name . '/status/' . $saved_post->id;
+            $permalink = 'https://twitter.com/' . $saved_post->user->screen_name . '/status/' . $saved_post->id_str;
             $post_object = array(
                 'post_content' => $content,
                 'post_status' => 'publish',
