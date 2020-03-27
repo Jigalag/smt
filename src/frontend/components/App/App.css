@@ -23,3 +23,11 @@
     -moz-border-radius: 0;
     border-radius: 0;
 }
+.saveButton {
+    height: 40px;
+    display: inline-block;
+    width: auto;
+    background: #f1f1f1;
+    padding: 0 40px;
+    cursor: pointer;
+}

@@ -10,7 +10,7 @@ function SavedListItem({item, changePosition, removePost}) {
     return (
         <div className={styles.listItem}>
             <div className={styles.deleteButton}>
-                <button onClick={(e) => removePost(e, item)}>
+                <button  className={styles.button} onClick={(e) => removePost(e, item)}>
                     Delete Post
                 </button>
             </div>

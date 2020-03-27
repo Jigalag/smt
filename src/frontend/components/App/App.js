@@ -12,6 +12,7 @@ function App() {
     const [settings, setSettings] = useState({});
     const [disabled, setDisabled] = useState(true);
     const [postsIsSaved, setIsSavedPosts] = useState(false);
+    const [forcePosts, setForcePosts] = useState(false);
     const [savedPosts, setSavedPosts] = useState([]);
     const [savedPostIds, setSavedPostIds] = useState([]);
     const [maxPostsNumber, setMaxPostsNumber] = useState(0);
@@ -29,7 +30,6 @@ function App() {
     };
 
     const savePosts = () => {
-        setIsSavedPosts(false);
         const posts = [...checkedPosts];
         fetch(window.ajaxURL + '?action=saveTwitterPosts', {
             headers: {
@@ -40,14 +40,13 @@ function App() {
             body: JSON.stringify(posts),
         }).then(response => response.json())
             .then(result => {
-                setIsSavedPosts(true);
+                setIsSavedPosts(!postsIsSaved);
                 setCheckedPosts([]);
             });
     };
 
     const removePost = (e, post) => {
         e.preventDefault();
-        setIsSavedPosts(false);
         const data = {
             'postId': post.ID
         };
@@ -60,15 +59,17 @@ function App() {
             body: JSON.stringify(data),
         }).then(response => response.json())
             .then(result => {
-                setIsSavedPosts(true);
+                const updateIds = savedPostIds.filter(item => {
+                    return item !== post.originalId;
+                });
+                setSavedPostIds(updateIds);
+                setIsSavedPosts(!postsIsSaved);
+                setForcePosts(!forcePosts);
             });
     };
 
     const changePosition = (e, position, post) => {
-        console.log(position);
-        console.log(post);
         e.preventDefault();
-        setIsSavedPosts(false);
         const data = {
             'postId': post.ID,
             'position': position,
@@ -82,7 +83,7 @@ function App() {
             body: JSON.stringify(data),
         }).then(response => response.json())
             .then(result => {
-                setIsSavedPosts(true);
+                setIsSavedPosts(!postsIsSaved);
             });
     };
 
@@ -112,6 +113,10 @@ function App() {
                 setDisabled(false);
             }
         };
+        getData();
+    }, []);
+
+    useEffect(() => {
         const getSavedPosts = async () => {
             const response = await fetch(window.ajaxURL + '?action=getSavedPosts');
             const content = await response.json();
@@ -122,7 +127,6 @@ function App() {
             });
             setSavedPostIds(updateIds)
         };
-        getData();
         getSavedPosts()
     }, [postsIsSaved]);
     return (
@@ -136,11 +140,12 @@ function App() {
                         </Tab>
                         <Tab title={'Twitter'} disabled={disabled}>
                             <div className={styles.savePostsButton}>
-                                <button disabled={checkedPosts.length === 0} onClick={() => savePosts()}>
+                                <button className={styles.saveButton} disabled={checkedPosts.length === 0} onClick={() => savePosts()}>
                                     Save Posts
                                 </button>
                             </div>
                             <Twitter
+                                forcePosts={forcePosts}
                                 savedPostIds={savedPostIds}
                                 isDisabledCheckbox={isDisabledCheckbox}
                                 checkPost={checkPost}

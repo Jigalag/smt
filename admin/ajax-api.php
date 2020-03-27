@@ -68,27 +68,34 @@ function getSavedPosts() {
         ));
         return false;
     }
-    $posts = get_posts(array(
-        'post_status' => array('publish'),
-        'post_type'		=> 'post',
-        'cat' => $categoryId,
-        'meta_key' => 'position',
-        'orderby' => 'meta_value_num',
-        'order' => 'ASC',
-        'numberposts' => -1,
-    ));
-    foreach ($posts as $post) {
-        $postId = $post->ID;
-        $image = get_field('image', $postId);
-        $originalId = get_field('original_id', $postId);
-        $position = get_field('position', $postId);
-        $post->image = $image;
-        $post->originalId = $originalId;
-        $post->position = $position;
+    $result = array();
+    if ($categoryId && $categoryId > 0) {
+        $posts = get_posts(array(
+            'post_status' => array('publish'),
+            'post_type'		=> 'post',
+            'cat' => $categoryId,
+            'meta_key' => 'position',
+            'orderby' => 'meta_value_num',
+            'order' => 'ASC',
+            'numberposts' => -1,
+        ));
+        foreach ($posts as $post) {
+            $postId = $post->ID;
+            $image = get_field('image', $postId);
+            $originalId = get_field('original_id', $postId);
+            $position = get_field('position', $postId);
+            $post->image = $image;
+            $post->originalId = $originalId;
+            $post->position = $position;
+        }
+        $result = array(
+            'data' => $posts
+        );
+    } else {
+        $result = array(
+            'data' => array()
+        );
     }
-    $result = array(
-        'data' => $posts
-    );
     echo json_encode($result);
     exit;
 }

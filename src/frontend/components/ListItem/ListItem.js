@@ -2,8 +2,8 @@ import React from 'react';
 import styles from './ListItem.css';
 
 function ListItem({item, savedPostIds, isDisabledCheckbox, checkPost}) {
-    const checked = (post) => {
-        return savedPostIds.includes(post.id_str);
+    const checked = () => {
+        return savedPostIds.includes(item.id_str);
     };
     return (
         <div className={styles.listItem}>
@@ -24,7 +24,7 @@ function ListItem({item, savedPostIds, isDisabledCheckbox, checkPost}) {
                     </div>
                     <div className={styles.listCheckbox}>
                         <input type="checkbox"
-                               defaultChecked={checked(item)}
+                               defaultChecked={checked()}
                                disabled={isDisabledCheckbox(item)}
                                onChange={() => { checkPost(item)} }
                         />
