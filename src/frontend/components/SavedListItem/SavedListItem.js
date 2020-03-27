@@ -15,7 +15,13 @@ function SavedListItem({item, changePosition, removePost}) {
                 </button>
             </div>
             {
-                item.image &&
+                item.media_type === 'video' &&
+                <div className={styles.listImageWrapper}
+                     dangerouslySetInnerHTML={{ __html: item.video_template }}>
+                </div>
+            }
+            {
+                item.image && item.media_type !== 'video'&&
                 <div className={styles.listImageWrapper}>
                     <img className={styles.listImage}
                          src={item.image} alt=""/>

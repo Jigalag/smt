@@ -17,6 +17,13 @@ function ListItem({item, savedPostIds, isDisabledCheckbox, checkPost}) {
 
             {
                 <div className={styles.listContent}>
+                    {
+                        item.extended_entities && item.extended_entities.media && item.extended_entities.media[0] && (
+                            <b className={styles.type}>
+                                Type: {item.extended_entities.media[0].type}
+                            </b>
+                        )
+                    }
                     <div className={styles.listText}>
                         {
                             item.full_text

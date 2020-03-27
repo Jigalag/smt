@@ -34,6 +34,7 @@
     object-fit: cover;
     display: block;
 }
+
 .listContent {
     display: flex;
     width: 100%;
@@ -46,4 +47,8 @@
     display: flex;
     width: 100%;
     margin-top: 20px;
+}
+.type {
+    margin-bottom: 15px;
+    text-transform: capitalize;
 }

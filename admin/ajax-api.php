@@ -84,9 +84,17 @@ function getSavedPosts() {
             $image = get_field('image', $postId);
             $originalId = get_field('original_id', $postId);
             $position = get_field('position', $postId);
+            $video_template = get_field('video_template', $postId);
+            $media_type = get_field('media_type', $postId);
+            $post_original_date = get_field('post_original_date', $postId);
+            $media_network = get_field('media_network', $postId);
             $post->image = $image;
             $post->originalId = $originalId;
             $post->position = $position;
+            $post->video_template = $video_template;
+            $post->media_type = $media_type;
+            $post->media_network = $media_network;
+            $post->post_original_date = $post_original_date;
         }
         $result = array(
             'data' => $posts
@@ -158,8 +166,12 @@ function saveTwitterPosts() {
         // TODO: check if exist
         foreach ($_POST as $saved_post) {
             $post_image = '';
+            $media_type = '';
             if (isset($saved_post->entities->media) && isset($saved_post->entities->media[0])) {
                 $post_image = $saved_post->entities->media[0]->media_url;
+            }
+            if (isset($saved_post->extended_entities->media) && isset($saved_post->extended_entities->media[0])) {
+                $media_type = $saved_post->extended_entities->media[0]->type;
             }
             $video_template = getTwitterVideo($saved_post);
             $content = fix_hash_tags($saved_post);
@@ -173,8 +185,10 @@ function saveTwitterPosts() {
                     'original_id' => $saved_post->id_str,
                     'image' => $post_image,
                     'position' => 0,
-                    'video' => $video_template,
-                    'post_date' => $saved_post->created_at,
+                    'video_template' => $video_template,
+                    'media_type' => $media_type,
+                    'media_network' => 'twitter',
+                    'post_original_date' => $saved_post->created_at,
                 ),
             );
             $post_ids[] = wp_insert_post($post_object);
