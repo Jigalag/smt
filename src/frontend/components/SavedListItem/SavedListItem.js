@@ -30,7 +30,7 @@ function SavedListItem({item, changePosition, removePost, maxPostsNumber}) {
                     </button>
                     <button className={styles.button}
                             onClick={(e) => moveBottom(e)}
-                            disabled={position*1 >= maxPostsNumber}>
+                            disabled={position*1 >= maxPostsNumber*1}>
                         Down
                     </button>
                 </div>
