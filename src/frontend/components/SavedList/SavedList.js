@@ -2,7 +2,7 @@ import React from 'react';
 import styles from './SavedList.css';
 import SavedListItem from "../SavedListItem/SavedListItem";
 
-function SavedList({listArray, changePosition, removePost}) {
+function SavedList({listArray, changePosition, removePost, maxPostsNumber}) {
     return (
         <div className={styles.list}>
             {
@@ -11,6 +11,7 @@ function SavedList({listArray, changePosition, removePost}) {
                                    key={index}
                                    removePost={removePost}
                                    changePosition={changePosition}
+                                   maxPostsNumber={maxPostsNumber}
                     />
                 ))
             }

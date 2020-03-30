@@ -26,7 +26,8 @@ function App() {
             return item.originalId;
         });
         return (checkedPosts.length >= maxPostsNumber && !checkedPostIds.includes(post.id))
-            || savedPosts.length >= maxPostsNumber || originalPostsIds.includes(post.id_str);
+            || savedPosts.length >= maxPostsNumber || originalPostsIds.includes(post.id_str) ||
+            (checkedPosts.length + savedPosts.length) >= maxPostsNumber;
     };
 
     const savePosts = () => {
@@ -72,7 +73,7 @@ function App() {
         e.preventDefault();
         const data = {
             'postId': post.ID,
-            'position': position,
+            'position': position*1,
         };
         fetch(window.ajaxURL + '?action=updatePosition', {
             headers: {
@@ -121,7 +122,7 @@ function App() {
             const response = await fetch(window.ajaxURL + '?action=getSavedPosts');
             const content = await response.json();
             setSavedPosts(content.data);
-            const updateIds = [...savedPostIds];
+            const updateIds = [];
             content.data.forEach(item => {
                 updateIds.push(item.originalId);
             });
@@ -155,7 +156,7 @@ function App() {
                 </div>
                 <div className={styles.savedSide}>
                     <Title text={'Saved Posts'}/>
-                    <SavedList listArray={savedPosts} changePosition={changePosition} removePost={removePost}/>
+                    <SavedList listArray={savedPosts} changePosition={changePosition} removePost={removePost} maxPostsNumber={maxPostsNumber}/>
                 </div>
             </div>
         </div>

@@ -185,7 +185,7 @@ function saveTwitterPosts() {
                 'meta_input'  => array(
                     'original_id' => $saved_post->id_str,
                     'image' => $post_image,
-                    'position' => 0,
+                    'position' => 1,
                     'video_template' => $video_template,
                     'media_type' => $media_type,
                     'media_network' => 'twitter',
