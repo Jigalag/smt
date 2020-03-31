@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import List from "../List/List";
-const URL = 'https://api.twitter.com/1.1/statuses/user_timeline.json?tweet_mode=extended';
 
 function Twitter({savedPostIds, isDisabledCheckbox, checkPost, forcePosts}) {
     const [tweets, setTweets] = useState([]);

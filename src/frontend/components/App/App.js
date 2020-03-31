@@ -7,6 +7,7 @@ import Title from "../Title/Title";
 import Twitter from "../Twitter/Twitter";
 import Settings from "../Settings/Settings";
 import SavedList from "../SavedList/SavedList";
+import Facebook from "../Facebook/Facebook";
 
 function App() {
     const [settings, setSettings] = useState({});
@@ -146,6 +147,19 @@ function App() {
                                 </button>
                             </div>
                             <Twitter
+                                forcePosts={forcePosts}
+                                savedPostIds={savedPostIds}
+                                isDisabledCheckbox={isDisabledCheckbox}
+                                checkPost={checkPost}
+                            />
+                        </Tab>
+                        <Tab title={'Facebook'} disabled={disabled}>
+                            <div className={styles.savePostsButton}>
+                                <button className={styles.saveButton} disabled={checkedPosts.length === 0} onClick={() => savePosts()}>
+                                    Save Posts
+                                </button>
+                            </div>
+                            <Facebook
                                 forcePosts={forcePosts}
                                 savedPostIds={savedPostIds}
                                 isDisabledCheckbox={isDisabledCheckbox}
