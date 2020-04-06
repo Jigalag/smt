@@ -214,7 +214,7 @@ function App() {
                              postType={'twitter'}>
                             <div className={styles.savePostsButton}>
                                 <button className={styles.saveButton} disabled={checkedPosts.length === 0} onClick={() => savePosts('twitter')}>
-                                    Save Posts
+                                    Add Posts
                                 </button>
                             </div>
                             <Twitter
@@ -229,7 +229,7 @@ function App() {
                              postType={'facebook'}>
                             <div className={styles.savePostsButton}>
                                 <button className={styles.saveButton} disabled={checkedPosts.length === 0} onClick={() => savePosts('facebook')}>
-                                    Save Posts
+                                    Add Posts
                                 </button>
                             </div>
                             <Facebook

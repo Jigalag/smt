@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import styles from './Tabs.css';
 
-function Tabs({children, setCurrentTab, checkedPosts, showModal}) {
+function Tabs({children, setCurrentTab, checkedPosts, showModal, simpleTab}) {
     const [selected, select] = useState(0);
     const changeTab = (elem, index, type) => {
-        if (checkedPosts.length > 0) {
-            showModal(index, select)
-        } else {
-            type ? setCurrentTab(type) : setCurrentTab('');
+        if (simpleTab) {
             !elem.props.disabled && select(index)
+        } else {
+            if (checkedPosts.length > 0) {
+                showModal(index, select)
+            } else {
+                type ? setCurrentTab(type) : setCurrentTab('');
+                !elem.props.disabled && select(index)
+            }
         }
     };
     return (

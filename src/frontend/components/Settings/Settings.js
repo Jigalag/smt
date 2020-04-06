@@ -10,7 +10,7 @@ function Settings({settings, forceSettings}) {
     const { general, facebook, twitter } = settings;
     return (
         <div className={styles.settings}>
-            <Tabs>
+            <Tabs simpleTab={true}>
                 <Tab title={'General Settings'}>
                     <GeneralSettings general={general || {}}/>
                 </Tab>
