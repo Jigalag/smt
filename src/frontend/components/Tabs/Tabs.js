@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
 import styles from './Tabs.css';
 
-function Tabs({children}) {
+function Tabs({children, setCurrentTab, checkedPosts, showModal}) {
     const [selected, select] = useState(0);
+    const changeTab = (elem, index, type) => {
+        if (checkedPosts.length > 0) {
+            showModal(index, select)
+        } else {
+            type ? setCurrentTab(type) : setCurrentTab('');
+            !elem.props.disabled && select(index)
+        }
+    };
     return (
         <div className={styles.tabsWrapper}>
             <div className={styles.tabsHeader}>
@@ -10,7 +18,7 @@ function Tabs({children}) {
                     children.map((elem, index) => {
                            let className = index === selected ? `${styles.selectedTab} ${styles.tabItem}` : styles.tabItem;
                            return (
-                               <div onClick={() => !elem.props.disabled && select(index)} className={className} key={index}>
+                               <div onClick={() => changeTab(elem, index, elem.props.postType)} className={className} key={index}>
                                    {elem.props.title}
                                </div>
                            )

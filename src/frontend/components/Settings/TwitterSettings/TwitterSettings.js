@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import styles from './../Settings.css';
 import Input from "../../Input/Input";
 
-function TwitterSettings({ twitterSettings }) {
+function TwitterSettings({ twitterSettings, forceSettings }) {
     const { token, token_secret, consumer_key, consumer_secret } = twitterSettings;
     const [twitterToken, setToken] = useState('');
     const [twitterSecret, setSecret] = useState('');
@@ -23,6 +23,8 @@ function TwitterSettings({ twitterSettings }) {
             },
             method: 'POST',
             body: JSON.stringify(data),
+        }).then(() => {
+            forceSettings()
         })
     };
     useEffect(() => {

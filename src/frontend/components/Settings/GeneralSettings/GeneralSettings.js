@@ -5,12 +5,14 @@ import Input from "../../Input/Input";
 function GeneralSettings({ general }) {
     const [postNumber, setPostNumber] = useState(0);
     const [postCategoryId, setCategoryId] = useState(0);
-    const { numberPosts = 0, categoryId = 0 } = general;
+    const [postDraftCategoryId, setDraftCategoryId] = useState(0);
+    const { numberPosts = 0, categoryId = 0, draftCategoryId = 0 } = general;
     const generalSubmit = (e) => {
         e.preventDefault();
         const data = {
             'numberPosts': postNumber,
-            'categoryId': postCategoryId
+            'categoryId': postCategoryId,
+            'draftCategoryId': postDraftCategoryId
         };
         fetch(window.ajaxURL + '?action=saveGeneralSettings', {
             headers: {
@@ -24,12 +26,14 @@ function GeneralSettings({ general }) {
     useEffect(() => {
         setPostNumber(numberPosts);
         setCategoryId(categoryId);
-    }, [numberPosts, categoryId]);
+        setDraftCategoryId(draftCategoryId);
+    }, [numberPosts, categoryId, draftCategoryId]);
     return (
         <div className={styles.settings}>
             <form>
                 <Input type={'number'} value={postNumber} onChange={setPostNumber} label={'Number of posts'}/>
                 <Input type={'number'} value={postCategoryId} onChange={setCategoryId} label={'Trending Category ID'}/>
+                <Input type={'number'} value={postDraftCategoryId} onChange={setDraftCategoryId} label={'Trending Draft Category ID'}/>
                 <Input type={'submit'} click={ generalSubmit } />
             </form>
         </div>

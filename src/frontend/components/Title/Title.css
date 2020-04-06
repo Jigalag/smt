@@ -4,3 +4,26 @@
     font-weight: bold;
     margin-bottom: 30px;
 }
+.button {
+    height: 40px;
+    -webkit-border-radius: 0;
+    -moz-border-radius: 0;
+    border-radius: 0;
+    border: 1px solid #ccc;
+    background: #f1f1f1;
+    padding: 0 20px;
+    font: 16px Arial;
+    margin-left: 10px;
+    cursor: pointer;
+    float: right;
+}
+.error {
+    color: red;
+    font: 16px/20px Arial;
+    font-weight: normal;
+}
+.success {
+    color: green;
+    font: 16px/20px Arial;
+    font-weight: normal;
+}

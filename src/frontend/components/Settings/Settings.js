@@ -4,9 +4,10 @@ import Tabs from "../Tabs/Tabs";
 import Tab from "../Tab/Tab";
 import GeneralSettings from "./GeneralSettings/GeneralSettings";
 import TwitterSettings from "./TwitterSettings/TwitterSettings";
+import FacebookSettings from "./FacebookSettings/FacebookSettings";
 
-function Settings({settings}) {
-    const { general, twitter } = settings;
+function Settings({settings, forceSettings}) {
+    const { general, facebook, twitter } = settings;
     return (
         <div className={styles.settings}>
             <Tabs>
@@ -14,7 +15,10 @@ function Settings({settings}) {
                     <GeneralSettings general={general || {}}/>
                 </Tab>
                 <Tab title={'Twitter Settings'}>
-                    <TwitterSettings twitterSettings={twitter || {}}/>
+                    <TwitterSettings forceSettings={forceSettings} twitterSettings={twitter || {}}/>
+                </Tab>
+                <Tab title={'Facebook Settings'}>
+                    <FacebookSettings forceSettings={forceSettings} facebookSettings={facebook || {}}/>
                 </Tab>
             </Tabs>
         </div>

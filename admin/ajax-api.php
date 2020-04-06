@@ -18,8 +18,14 @@ add_action( "wp_ajax_nopriv_saveGeneralSettings", "saveGeneralSettings" );
 add_action( "wp_ajax_saveTwitterSettings", "saveTwitterSettings" );
 add_action( "wp_ajax_nopriv_saveTwitterSettings", "saveTwitterSettings" );
 
+add_action( "wp_ajax_saveFacebookSettings", "saveFacebookSettings" );
+add_action( "wp_ajax_nopriv_saveFacebookSettings", "saveFacebookSettings" );
+
 add_action( "wp_ajax_saveTwitterPosts", "saveTwitterPosts" );
 add_action( "wp_ajax_nopriv_saveTwitterPosts", "saveTwitterPosts" );
+
+add_action( "wp_ajax_saveFacebookPosts", "saveFacebookPosts" );
+add_action( "wp_ajax_nopriv_saveFacebookPosts", "saveFacebookPosts" );
 
 add_action( "wp_ajax_removePost", "removePost" );
 add_action( "wp_ajax_nopriv_removePost", "removePost" );
@@ -30,11 +36,15 @@ add_action( "wp_ajax_nopriv_updatePosition", "updatePosition" );
 add_action( "wp_ajax_getTwitterFeeds", "getTwitterFeeds" );
 add_action( "wp_ajax_nopriv_getTwitterFeeds", "getTwitterFeeds" );
 
+add_action( "wp_ajax_publishPosts", "publishPosts" );
+add_action( "wp_ajax_nopriv_publishPosts", "publishPosts" );
+
 
 
 function getSMTSettings() {
     $number_posts = intval(get_option(SMT_NUMBER_POSTS));
     $category_id = intval(get_option(SMT_POST_CATEGORY_ID));
+    $draft_category_id = intval(get_option(SMT_DRAFT_POST_CATEGORY_ID));
     $token = get_option(SMT_TWITTER_TOKEN);
     $secret = get_option(SMT_TWITTER_SECRET);
     $ck = get_option(SMT_TWITTER_CK);
@@ -45,13 +55,18 @@ function getSMTSettings() {
         'consumer_key' => $ck ? $ck : '',
         'consumer_secret' => $cs ? $cs : '',
     );
-
+    $facebook_token = get_option(SMT_FACEBOOK_TOKEN);
+    $facebook = array(
+        'token' => $facebook_token
+    );
     header('Content-Type: application/json');
     $result = array(
         'general' => array(
             'numberPosts' => $number_posts,
-            'categoryId' => $category_id
+            'categoryId' => $category_id,
+            'draftCategoryId' => $draft_category_id
         ),
+        'facebook' => $facebook,
         'twitter' => $twitter,
     );
     echo json_encode($result);
@@ -59,12 +74,13 @@ function getSMTSettings() {
 }
 
 function getSavedPosts() {
+    $draftCategoryId = get_option(SMT_DRAFT_POST_CATEGORY_ID);
     $categoryId = get_option(SMT_POST_CATEGORY_ID);
-    if (!$categoryId || $categoryId === 0) {
+    if ((!$categoryId || $categoryId == 0) && (!$draftCategoryId || $draftCategoryId == 0)) {
         echo json_encode(array(
             'data' => array(),
             'error' => true,
-            'errorText' => 'Please provide category id'
+            'errorText' => 'Please provide category id and draft category id'
         ));
         return false;
     }
@@ -73,7 +89,7 @@ function getSavedPosts() {
         $posts = get_posts(array(
             'post_status' => array('publish'),
             'post_type'		=> 'post',
-            'cat' => $categoryId,
+            'cat' => $draftCategoryId,
             'meta_key' => 'position',
             'orderby' => 'meta_value_num',
             'order' => 'ASC',
@@ -108,16 +124,68 @@ function getSavedPosts() {
     exit;
 }
 
-function fix_hash_tags($post_data) {
-
-    $text = isset( $post_data->retweeted_status->full_text ) ? $post_data->retweeted_status->full_text : $post_data->full_text;
-
-    // Message. Convert links to real links.
-    $pattern   = array( '/http:(\S)+/', '/https:(\S)+/', '/@+(\w+)/u', '/#+(\w+)/u' );
-    $replace   = array( ' <a href="${0}" target="_blank" rel="nofollow">${0}</a>', ' <a href="${0}" target="_blank" rel="nofollow">${0}</a>', ' <a href="https://twitter.com/$1" target="_blank" rel="nofollow">@$1</a>', ' <a href="https://twitter.com/hashtag/$1?src=hash" target="_blank" rel="nofollow">#$1</a>' );
-    $full_text = preg_replace( $pattern, $replace, $text );
-
-    return nl2br( $full_text );
+function publishPosts() {
+    $draftCategoryId = get_option(SMT_DRAFT_POST_CATEGORY_ID);
+    $categoryId = get_option(SMT_POST_CATEGORY_ID);
+    if ((!$categoryId || $categoryId == 0) && (!$draftCategoryId || $draftCategoryId == 0)) {
+        echo json_encode(array(
+            'data' => array(),
+            'error' => true,
+            'errorText' => 'Please provide category id and draft category id'
+        ));
+        return false;
+    }
+    $posts = get_posts(array(
+        'post_status' => array('publish'),
+        'post_type'		=> 'post',
+        'cat' => $categoryId,
+        'numberposts' => -1,
+    ));
+    foreach ($posts as $post) {
+        wp_delete_post($post->ID, true);
+    }
+    $draft_posts = get_posts(array(
+        'post_status' => array('publish'),
+        'post_type'		=> 'post',
+        'cat' => $draftCategoryId,
+        'numberposts' => -1,
+    ));
+    foreach ($draft_posts as $draft_post) {
+        $postId = $draft_post->ID;
+        $image = get_field('image', $postId);
+        $originalId = get_field('original_id', $postId);
+        $position = get_field('position', $postId);
+        $video_template = get_field('video_template', $postId);
+        $media_type = get_field('media_type', $postId);
+        $post_original_date = get_field('post_original_date', $postId);
+        $media_network = get_field('media_network', $postId);
+        $permalink = get_field('media_link', $postId);
+        $content = $draft_post->post_content;
+        $title = $draft_post->post_title;
+        $post_object = array(
+            'post_content' => $content,
+            'post_status' => 'publish',
+            'post_title' => $title,
+            'post_type' => 'post',
+            'post_category' => array($categoryId),
+            'meta_input'  => array(
+                'original_id' => $originalId,
+                'image' => $image,
+                'position' => $position,
+                'video_template' => $video_template,
+                'media_type' => $media_type,
+                'media_network' => $media_network,
+                'media_link' => $permalink,
+                'post_original_date' => $post_original_date,
+            ),
+        );
+        $post_ids[] = wp_insert_post($post_object);
+    }
+    $result = array(
+        'data' => 'Posts successfully published'
+    );
+    echo json_encode($result);
+    exit;
 }
 
 function updatePosition() {
@@ -149,13 +217,26 @@ function removePost() {
     exit;
 }
 
+function twitter_hashtags($post_data) {
+
+    $text = isset( $post_data->retweeted_status->full_text ) ? $post_data->retweeted_status->full_text : $post_data->full_text;
+
+    // Message. Convert links to real links.
+    $pattern   = array( '/http:(\S)+/', '/https:(\S)+/', '/@+(\w+)/u', '/#+(\w+)/u' );
+    $replace   = array( ' <a href="${0}" target="_blank" rel="nofollow">${0}</a>', ' <a href="${0}" target="_blank" rel="nofollow">${0}</a>', ' <a href="https://twitter.com/$1" target="_blank" rel="nofollow">@$1</a>', ' <a href="https://twitter.com/hashtag/$1?src=hash" target="_blank" rel="nofollow">#$1</a>' );
+    $full_text = preg_replace( $pattern, $replace, $text );
+
+    return nl2br( $full_text );
+}
+
 function saveTwitterPosts() {
+    $draftCategoryId = get_option(SMT_DRAFT_POST_CATEGORY_ID);
     $categoryId = get_option(SMT_POST_CATEGORY_ID);
-    if (!$categoryId || $categoryId === 0) {
+    if ((!$categoryId || $categoryId == 0) && (!$draftCategoryId || $draftCategoryId == 0)) {
         echo json_encode(array(
             'data' => array(),
             'error' => true,
-            'errorText' => 'Please provide category id'
+            'errorText' => 'Please provide category id and draft category id'
         ));
         return false;
     }
@@ -174,14 +255,14 @@ function saveTwitterPosts() {
                 $media_type = $saved_post->extended_entities->media[0]->type;
             }
             $video_template = getTwitterVideo($saved_post);
-            $content = fix_hash_tags($saved_post);
+            $content = twitter_hashtags($saved_post);
             $permalink = 'https://twitter.com/' . $saved_post->user->screen_name . '/status/' . $saved_post->id_str;
             $post_object = array(
                 'post_content' => $content,
                 'post_status' => 'publish',
                 'post_title' => mb_strimwidth($saved_post->full_text, 0, 20, '...'),
                 'post_type' => 'post',
-                'post_category' => array($categoryId),
+                'post_category' => array($draftCategoryId),
                 'meta_input'  => array(
                     'original_id' => $saved_post->id_str,
                     'image' => $post_image,
@@ -190,6 +271,77 @@ function saveTwitterPosts() {
                     'media_type' => $media_type,
                     'media_network' => 'twitter',
                     'media_link' => $permalink,
+                    'post_original_date' => $saved_post->created_at,
+                ),
+            );
+            $post_ids[] = wp_insert_post($post_object);
+        }
+    }
+    $result = array(
+        'data' => $post_ids
+    );
+    echo json_encode($result);
+    exit;
+}
+
+
+function facebook_hashtags($post_data) {
+
+    $text = isset( $post_data->retweeted_status->full_text ) ? $post_data->retweeted_status->full_text : $post_data->full_text;
+
+    // Message. Convert links to real links.
+    $pattern   = array( '/http:(\S)+/', '/https:(\S)+/', '/@+(\w+)/u', '/#+(\w+)/u' );
+    $replace   = array( ' <a href="${0}" target="_blank" rel="nofollow">${0}</a>', ' <a href="${0}" target="_blank" rel="nofollow">${0}</a>', ' <a href="https://www.facebook.com/hashtag/$1" target="_blank" rel="nofollow">@$1</a>', ' <a href="https://www.facebook.com/hashtag/$1" target="_blank" rel="nofollow">#$1</a>' );
+    $full_text = preg_replace( $pattern, $replace, $text );
+
+    return nl2br( $full_text );
+}
+
+function saveFacebookPosts() {
+    $draftCategoryId = get_option(SMT_DRAFT_POST_CATEGORY_ID);
+    $categoryId = get_option(SMT_POST_CATEGORY_ID);
+    if ((!$categoryId || $categoryId == 0) && (!$draftCategoryId || $draftCategoryId == 0)) {
+        echo json_encode(array(
+            'data' => array(),
+            'error' => true,
+            'errorText' => 'Please provide category id and draft category id'
+        ));
+        return false;
+    }
+    $post_ids = [];
+    if (!empty(trim(file_get_contents("php://input")))) {
+        $post = trim(file_get_contents("php://input"));
+        $_POST = (array)json_decode($post);
+        // TODO: check if exist
+        foreach ($_POST as $saved_post) {
+            $post_image = '';
+            $media_type = '';
+            if (isset($saved_post->entities->media) && isset($saved_post->entities->media[0])) {
+                $post_image = $saved_post->entities->media[0]->media_url;
+            }
+            if (isset($saved_post->extended_entities->media) && isset($saved_post->extended_entities->media[0])) {
+                $media_type = $saved_post->extended_entities->media[0]->type;
+            }
+            if ($media_type == 'video') {
+                $video_template = getFacebookVideo($saved_post);
+            } else {
+                $video_template = '';
+            }
+            $content = facebook_hashtags($saved_post);
+            $post_object = array(
+                'post_content' => $content,
+                'post_status' => 'publish',
+                'post_title' => mb_strimwidth($saved_post->full_text, 0, 20, '...'),
+                'post_type' => 'post',
+                'post_category' => array($draftCategoryId),
+                'meta_input'  => array(
+                    'original_id' => $saved_post->id_str,
+                    'image' => $post_image,
+                    'position' => 1,
+                    'video_template' => $video_template,
+                    'media_type' => $media_type,
+                    'media_network' => 'facebook',
+                    'media_link' => $saved_post->permalink_url,
                     'post_original_date' => $saved_post->created_at,
                 ),
             );
@@ -271,8 +423,10 @@ function saveGeneralSettings() {
         $_POST = ( array ) json_decode( $post );
         $numberPosts = $_POST['numberPosts'];
         $categoryId = $_POST['categoryId'];
+        $draftCategoryId = $_POST['draftCategoryId'];
         update_option(SMT_NUMBER_POSTS, $numberPosts);
         update_option(SMT_POST_CATEGORY_ID, $categoryId);
+        update_option(SMT_DRAFT_POST_CATEGORY_ID, $draftCategoryId);
     }
 }
 
@@ -291,18 +445,41 @@ function saveTwitterSettings() {
     }
 }
 
+function saveFacebookSettings() {
+    if ( !empty( trim( file_get_contents("php://input" ) ) ) ) {
+        $post = trim(file_get_contents("php://input"));
+        $_POST = ( array ) json_decode( $post );
+        $token = $_POST['token'];
+        update_option(SMT_FACEBOOK_TOKEN, $token);
+    }
+}
+
+function getFacebookVideo($post_data) {
+    $poster = $post_data->entities->media[0]->media_url;
+    $source = $post_data->extended_entities->media[0]->source;
+    $video_output = '<div class="fts-jal-fb-vid-wrap">';
+
+    // This line is here so we can fetch the source to feed into the popup since some html 5 videos can be displayed without the need for a button.
+    $video_output .= '<a href="' . $poster . '" style="display:none !important" class="fts-facebook-link-target fts-jal-fb-vid-image fts-video-type"></a>';
+    $video_output .= '<div class="fts-fluid-videoWrapper-html5">';
+    $video_output .= '<video controls poster="' . $poster . '" width="100%;" style="max-width:100%;">';
+    $video_output .= '<source src="' . $source . '" type="video/mp4">';
+    $video_output .= '</video>';
+    $video_output .= '</div>';
+
+    $video_output .= '</div>';
+
+    return $video_output;
+}
+
 function getTwitterVideo($post_data) {
 
-    // if (!wp_verify_nonce($_REQUEST['fts_security'], $_REQUEST['fts_time'] . 'load-more-nonce')) {.
-    // exit('Sorry, You can\'t do that!');.
-    // } else {.
     if ( isset( $post_data->quoted_status->entities->media[0]->type ) ) {
         $twitter_final = isset( $post_data->quoted_status->entities->media[0]->expanded_url ) ? $post_data->quoted_status->entities->media[0]->expanded_url : '';
     } else {
         $twitter_final = isset( $post_data->entities->urls[0]->expanded_url ) ? $post_data->entities->urls[0]->expanded_url : '';
     }
 
-    // strip Vimeo URL then ouput Iframe.
     if ( strpos( $twitter_final, 'vimeo' ) > 0 ) {
         if ( strpos( $twitter_final, 'staffpicks' ) > 0 ) {
             $parsed_url      = $twitter_final;
@@ -313,7 +490,7 @@ function getTwitterVideo($post_data) {
         }
         return '<div class="fts-fluid-videoWrapper"><iframe src="https://player.vimeo.com/video/' . $vimeo_url_final . '?autoplay=0" class="video" height="390" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe></div>';
     } elseif (
-        // strip Vimeo Staffpics URL then ouput Iframe.
+
         strpos( $twitter_final, 'youtube' ) > 0 && ! strpos( $twitter_final, '-youtube' ) > 0 ) {
         $pattern = '#^(?:https?://)?(?:www\.)?(?:youtu\.be/|youtube\.com(?:/embed/|/v/|/watch\?v=|/watch\?.+&v=))([\w-]{11})(?:.+)?$#x';
         preg_match( $pattern, $twitter_final, $matches );
@@ -321,30 +498,24 @@ function getTwitterVideo($post_data) {
 
         return '<div class="fts-fluid-videoWrapper"><iframe height="281" class="video" src="https://www.youtube.com/embed/' . $youtube_url_final . '?autoplay=0" frameborder="0" allowfullscreen></iframe></div>';
     } elseif (
-        // strip Youtube URL then ouput Iframe and script.
         strpos( $twitter_final, 'youtu.be' ) > 0 ) {
         $pattern = '#^(?:https?://)?(?:www\.)?(?:youtu\.be/|youtube\.com(?:/embed/|/v/|/watch\?v=|/watch\?.+&v=))([\w-]{11})(?:.+)?$#x';
         preg_match( $pattern, $twitter_final, $matches );
         $youtube_url_final = $matches[1];
         return '<div class="fts-fluid-videoWrapper"><iframe height="281" class="video" src="https://www.youtube.com/embed/' . $youtube_url_final . '?autoplay=0" frameborder="0" allowfullscreen></iframe></div>';
     } elseif (
-        // strip Youtube URL then ouput Iframe and script.
+
         strpos( $twitter_final, 'soundcloud' ) > 0 ) {
 
-        // Get the JSON data of song details with embed code from SoundCloud oEmbed.
         $get_values = wp_remote_get( 'https://soundcloud.com/oembed?format=js&url=' . $twitter_final . '&auto_play=false&iframe=true' );
 
-        // Clean the Json to decode.
         $decode_iframe = substr( $get_values, 1, -2 );
 
-        // json decode to convert it as an array.
         $json_object = json_decode( $decode_iframe );
 
         return '<div class="fts-fluid-videoWrapper">' . $json_object->html . '</div>';
     } else {
 
-        // START VIDEO POST.
-        // Check through the different video options availalbe. For some reson the varaints which are the atcual video urls vary at times in quality so we are going to shoot for 4 first then 2, 3 and 1.
         if ( isset( $post_data->extended_entities->media[0]->video_info->variants[4]->content_type ) && 'video/mp4' === $post_data->extended_entities->media[0]->video_info->variants[4]->content_type ) {
             $twitter_final = isset( $post_data->extended_entities->media[0]->video_info->variants[4]->url ) ? $post_data->extended_entities->media[0]->video_info->variants[4]->url : '';
         } elseif ( isset( $post_data->extended_entities->media[0]->video_info->variants[2]->content_type ) && 'video/mp4' === $post_data->extended_entities->media[0]->video_info->variants[2]->content_type ) {
@@ -355,7 +526,6 @@ function getTwitterVideo($post_data) {
             $twitter_final = isset( $post_data->extended_entities->media[0]->video_info->variants[1]->url ) ? $post_data->extended_entities->media[0]->video_info->variants[1]->url : '';
         }
 
-        // The only difference in these lines is the "retweeted_status" These are twitter videos from Tweet link people post, the ones above are direct videos users post to there timeline.
         elseif ( isset( $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[4]->content_type ) && 'video/mp4' === $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[4]->content_type ) {
             $twitter_final = isset( $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[4]->url ) ? $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[4]->url : '';
         } elseif ( isset( $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[2]->content_type ) && 'video/mp4' === $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[2]->content_type ) {
@@ -366,7 +536,6 @@ function getTwitterVideo($post_data) {
             $twitter_final = isset( $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[1]->url ) ? $post_data->retweeted_status->extended_entities->media[0]->video_info->variants[1]->url : '';
         }
 
-        // The only difference in these lines is the "quoted_status" These are twitter videos from Tweet link people post, the ones above are direct videos users post to there timeline.
         elseif ( isset( $post_data->quoted_status->extended_entities->media[0]->video_info->variants[4]->content_type ) && 'video/mp4' === $post_data->quoted_status->extended_entities->media[0]->video_info->variants[4]->content_type ) {
             $twitter_final = isset( $post_data->quoted_status->extended_entities->media[0]->video_info->variants[4]->url ) ? $post_data->quoted_status->extended_entities->media[0]->video_info->variants[4]->url : '';
         } elseif ( isset( $post_data->quoted_status->extended_entities->media[0]->video_info->variants[2]->content_type ) && 'video/mp4' === $post_data->quoted_status->extended_entities->media[0]->video_info->variants[2]->content_type ) {
@@ -377,7 +546,6 @@ function getTwitterVideo($post_data) {
             $twitter_final = isset( $post_data->quoted_status->extended_entities->media[0]->video_info->variants[1]->url ) ? $post_data->quoted_status->extended_entities->media[0]->video_info->variants[1]->url : '';
         }
 
-        // Check to see if there is a poster image available.
         if ( isset( $post_data->extended_entities->media[0]->media_url_https ) ) {
 
             $twitter_final_poster = isset( $post_data->extended_entities->media[0]->media_url_https ) ? $post_data->extended_entities->media[0]->media_url_https : '';
@@ -391,7 +559,6 @@ function getTwitterVideo($post_data) {
 
         $fts_twitter_output = '<div class="fts-jal-fb-vid-wrap">';
 
-        // This line is here so we can fetch the source to feed into the popup since some html 5 videos can be displayed without the need for a button.
         $fts_twitter_output .= '<a href="' . $twitter_final . '" style="display:none !important" class="fts-facebook-link-target fts-jal-fb-vid-image fts-video-type"></a>';
         $fts_twitter_output .= '<div class="fts-fluid-videoWrapper-html5">';
         $fts_twitter_output .= '<video controls poster="' . $twitter_final_poster . '" width="100%;" style="max-width:100%;">';
@@ -400,21 +567,6 @@ function getTwitterVideo($post_data) {
         $fts_twitter_output .= '</div>';
 
         $fts_twitter_output .= '</div>';
-
-        // return '<div class="fts-fluid-videoWrapper"><iframe src="' . $twitter_final_video . '" class="video" height="390" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe></div>';.
-        // echo $twitter_final;.
-        //
-        // REMOVING THIS TWITTER VID OPTION TILL WE GET SOME ANSWERS.
-        //
-        // https://twittercommunity.com/t/twitter-statuses-oembed-parameters-not-working/105868.
-        // https://stackoverflow.com/questions/50419158/twitter-statuses-oembed-parameters-not-working.
         return $fts_twitter_output;
-        // }.
-        // else {.
-        // exit('That is not allowed. FTS!');.
-        // }.
-        // } //strip Vine URL then ouput Iframe and script.
     }
-    // end main else.
-    // die();.
 }
