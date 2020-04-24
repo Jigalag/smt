@@ -12,7 +12,19 @@ function Twitter({savedPostIds, isDisabledCheckbox, checkPost, forcePosts}) {
             setIsLoading(true);
             const result = await fetch(window.ajaxURL + '?action=getTwitterFeeds');
             const content = await result.json();
-            setTweets(content.data);
+            const updatedContent = content.data.map((item) => {
+                const permalink_url = `https://twitter.com/${item.user.screen_name}/status/${item.id_str}`;
+                return {
+                    entities: item.entities,
+                    extended_entities: item.extended_entities,
+                    full_text: item.full_text,
+                    created_at: item.created_at,
+                    id_str: item.id_str,
+                    id: item.id,
+                    permalink_url
+                };
+            });
+            setTweets(updatedContent);
             setIsLoading(false);
             if (content.error) {
                 setIsError(true);

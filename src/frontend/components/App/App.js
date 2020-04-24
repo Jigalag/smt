@@ -20,6 +20,7 @@ function App() {
     const [postsIsSaved, setIsSavedPosts] = useState(false);
     const [forcePosts, setForcePosts] = useState(false);
     const [forceSettings, setForceSettings] = useState(false);
+    const [disabledPublish, setDisabledPublish] = useState(true);
     const [savedPosts, setSavedPosts] = useState([]);
     const [savedPostIds, setSavedPostIds] = useState([]);
     const [maxPostsNumber, setMaxPostsNumber] = useState(0);
@@ -190,14 +191,18 @@ function App() {
                 updateIds.push(item.originalId);
             });
             setSavedPostIds(updateIds);
-            if (updateIds.length < maxPostsNumber) {
-                setPublishError(`Saved posts count are less than ${maxPostsNumber}`);
-            } else {
-                setPublishError('');
-            }
         };
         getSavedPosts()
     }, [postsIsSaved]);
+    useEffect(() => {
+        if (savedPosts.length < (maxPostsNumber * 1)) {
+            setPublishError(`Saved posts count are less than ${maxPostsNumber}`);
+            setDisabledPublish(true);
+        } else {
+            setPublishError('');
+            setDisabledPublish(false);
+        }
+    }, [forceSettings, savedPosts, checkedPosts, maxPostsNumber]);
     return (
         <div>
             <Header />
@@ -245,6 +250,7 @@ function App() {
                 </div>
                 <div className={styles.savedSide}>
                     <Title text={'Saved Posts'}
+                           disabledPublish={disabledPublish}
                            publishError={publishError}
                            publishSuccess={publishSuccess}
                            publishPosts={publishPosts}/>

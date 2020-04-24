@@ -256,7 +256,6 @@ function saveTwitterPosts() {
             }
             $video_template = getTwitterVideo($saved_post);
             $content = twitter_hashtags($saved_post);
-            $permalink = 'https://twitter.com/' . $saved_post->user->screen_name . '/status/' . $saved_post->id_str;
             $post_object = array(
                 'post_content' => $content,
                 'post_status' => 'publish',
@@ -270,7 +269,7 @@ function saveTwitterPosts() {
                     'video_template' => $video_template,
                     'media_type' => $media_type,
                     'media_network' => 'twitter',
-                    'media_link' => $permalink,
+                    'media_link' => $saved_post->permalink_url,
                     'post_original_date' => $saved_post->created_at,
                 ),
             );

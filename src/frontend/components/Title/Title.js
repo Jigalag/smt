@@ -1,13 +1,13 @@
 import React from 'react';
 import styles from './Title.css';
 
-function Title({text, publishPosts, publishSuccess, publishError}) {
+function Title({text, publishPosts, publishSuccess, publishError, disabledPublish}) {
     return (
         <div className={styles.title}>
             {
                 text
             }
-            <button onClick={() => publishPosts()} className={styles.button}>Publish Posts</button>
+            <button disabled={disabledPublish} onClick={() => publishPosts()} className={styles.button}>Publish Posts</button>
             <div>
 
                 {
