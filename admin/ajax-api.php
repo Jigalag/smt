@@ -229,6 +229,43 @@ function twitter_hashtags($post_data) {
     return nl2br( $full_text );
 }
 
+function saveImage($image_url) {
+    $image_name       = sanitize_file_name($image_url);
+    $upload_dir       = wp_upload_dir();
+    $image_data       = file_get_contents($image_url);
+    $unique_file_name = wp_unique_filename($upload_dir['path'], $image_name);
+    $filename         = basename($unique_file_name);
+
+    if(wp_mkdir_p($upload_dir['path'])) {
+        $file = $upload_dir['path'] . '/' . $filename;
+    } else {
+        $file = $upload_dir['basedir'] . '/' . $filename;
+    }
+
+    // Create the image  file on the server
+    file_put_contents($file, $image_data);
+
+    // Check image file type
+    $wp_filetype = wp_check_filetype($filename, null);
+
+    // Set attachment data
+    $attachment = array(
+        'post_mime_type' => $wp_filetype['type'],
+        'post_title'     => sanitize_file_name($filename),
+        'post_content'   => '',
+        'post_status'    => 'inherit'
+    );
+    $attach_id = wp_insert_attachment( $attachment, $file );
+
+    require_once(ABSPATH . 'wp-admin/includes/image.php');
+
+    $attach_data = wp_generate_attachment_metadata( $attach_id, $file );
+
+    wp_update_attachment_metadata( $attach_id, $attach_data );
+
+    return wp_get_attachment_image_src($attach_id, 'full')[0];
+}
+
 function saveTwitterPosts() {
     $draftCategoryId = get_option(SMT_DRAFT_POST_CATEGORY_ID);
     $categoryId = get_option(SMT_POST_CATEGORY_ID);
@@ -249,7 +286,8 @@ function saveTwitterPosts() {
             $post_image = '';
             $media_type = '';
             if (isset($saved_post->entities->media) && isset($saved_post->entities->media[0])) {
-                $post_image = $saved_post->entities->media[0]->media_url;
+                $current_image = $saved_post->entities->media[0]->media_url;
+                $post_image = saveImage($current_image);
             }
             if (isset($saved_post->extended_entities->media) && isset($saved_post->extended_entities->media[0])) {
                 $media_type = $saved_post->extended_entities->media[0]->type;
@@ -316,7 +354,8 @@ function saveFacebookPosts() {
             $post_image = '';
             $media_type = '';
             if (isset($saved_post->entities->media) && isset($saved_post->entities->media[0])) {
-                $post_image = $saved_post->entities->media[0]->media_url;
+                $current_image = $saved_post->entities->media[0]->media_url;
+                $post_image = saveImage($current_image);
             }
             if (isset($saved_post->extended_entities->media) && isset($saved_post->extended_entities->media[0])) {
                 $media_type = $saved_post->extended_entities->media[0]->type;
