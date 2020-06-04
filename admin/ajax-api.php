@@ -230,7 +230,7 @@ function twitter_hashtags($post_data) {
 }
 
 function saveImage($image_url) {
-    $image_name       = sanitize_file_name($image_url);
+    $image_name       = 'smt-image_'.time().'.jpg';
     $upload_dir       = wp_upload_dir();
     $image_data       = file_get_contents($image_url);
     $unique_file_name = wp_unique_filename($upload_dir['path'], $image_name);
