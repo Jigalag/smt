@@ -500,7 +500,7 @@ function getFacebookVideo($post_data) {
     // This line is here so we can fetch the source to feed into the popup since some html 5 videos can be displayed without the need for a button.
     $video_output .= '<a href="' . $poster . '" style="display:none !important" class="fts-facebook-link-target fts-jal-fb-vid-image fts-video-type"></a>';
     $video_output .= '<div class="fts-fluid-videoWrapper-html5">';
-    $video_output .= '<video controls poster="' . $poster . '" width="100%;" style="max-width:100%;">';
+    $video_output .= '<video controls poster="' . $poster . '" style="max-width:100%; width: 100%;">';
     $video_output .= '<source src="' . $source . '" type="video/mp4">';
     $video_output .= '</video>';
     $video_output .= '</div>';
@@ -599,7 +599,7 @@ function getTwitterVideo($post_data) {
 
         $fts_twitter_output .= '<a href="' . $twitter_final . '" style="display:none !important" class="fts-facebook-link-target fts-jal-fb-vid-image fts-video-type"></a>';
         $fts_twitter_output .= '<div class="fts-fluid-videoWrapper-html5">';
-        $fts_twitter_output .= '<video controls poster="' . $twitter_final_poster . '" width="100%;" style="max-width:100%;">';
+        $fts_twitter_output .= '<video controls poster="' . $twitter_final_poster . '" style="max-width:100%; width: 100%;">';
         $fts_twitter_output .= '<source src="' . $twitter_final . '" type="video/mp4">';
         $fts_twitter_output .= '</video>';
         $fts_twitter_output .= '</div>';
